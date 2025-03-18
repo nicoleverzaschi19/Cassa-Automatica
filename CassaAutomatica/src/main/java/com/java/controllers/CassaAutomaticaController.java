@@ -29,6 +29,11 @@ public class CassaAutomaticaController {
         return ResponseEntity.ok("Articolo aggiunto correttamente.");
     }
     @PostMapping("/create/barcode")
+    public ResponseEntity<?> createBarcode() {
+        // Creare un endpoint che permetta di creare uno scontrino
+        return ResponseEntity.ok(cassaAutomaticaService.creaScontrino());
+    }
+    @PostMapping("/create/barcode/fromList")
     public ResponseEntity<?> createBarcode(@RequestBody List<String> barcodes) {
         // Creare un endpoint che permetta di creare uno scontrino
         /*
@@ -36,19 +41,19 @@ public class CassaAutomaticaController {
         "123455667",
         "234253635"]
          */
-        return ResponseEntity.ok(cassaAutomaticaService.creaScontrino(barcodes));
+        return ResponseEntity.ok(cassaAutomaticaService.creaScontrinoDaArticoli(barcodes));
     }
+    @PostMapping("/add/articolo/barcode/{barcode}/{idScontrino}")
+    public ResponseEntity<?> addArticolo(@PathVariable String barcode,@PathVariable Integer idScontrino) {
+        // Dato un barcode, registrare un articolo all'interno dello scontrino. è possibile inserire lo stesso articolo più volte
+        return ResponseEntity.ok(cassaAutomaticaService.creaScontrinoDaArticoli(List.of(barcode),idScontrino));
+    }
+
     @GetMapping("/incasso/giornata")
     public ResponseEntity<?> getIncassoGiornata() {
        return ResponseEntity.ok("Totale giornaliero incassato: " + cassaAutomaticaService.incassoGiornaliero() + "€");
     }
 
-    @PostMapping("/add/articolo/barcode")
-    public ResponseEntity<?> addArticolo(@RequestBody String barcode) {
-        // Dato un barcode, registrare un articolo all'interno dello scontrino. è possibile inserire lo stesso articolo più volte
-        List<String> barcodeList = List.of(barcode);
-        return ResponseEntity.ok(cassaAutomaticaService.creaScontrino(barcodeList));
-    }
     @GetMapping("/get/incasso/reparto/giornata")
     public ResponseEntity<?> getIncassoGiornataPerReparto() {
         // Rendere disponibile un endpoint che calcoli l'incasso per reparto, data una giornata

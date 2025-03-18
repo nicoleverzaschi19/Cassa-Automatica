@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -47,11 +48,26 @@ public class CassaAutomaticaService {
         articoloDao.save(articolo);
     }
 
+    public Scontrino creaScontrino(){
+        Scontrino s = new Scontrino(null, 0, LocalDate.now());
+        scontrinoDao.save(s);
+        return s;
+    }
+    public ScontrinoDto creaScontrinoDaArticoli(List<String> codiciArticoli) {
+        return creaScontrinoDaArticoli(codiciArticoli,null);
+    }
+
     @Transactional
-    public ScontrinoDto creaScontrino(List<String> codiciArticoli) {
+    public ScontrinoDto creaScontrinoDaArticoli(List<String> codiciArticoli,Integer idScontrino) {
         List<Articolo> articoli = new ArrayList<>();
         List<ArticoloDto> articoloDtos = new ArrayList<>();
-        AtomicReference<Double> totale = new AtomicReference<>(0.0);
+        Scontrino scontrino;
+        if (Objects.isNull(idScontrino)) {
+            scontrino = new Scontrino(articoli,0.0, LocalDate.now());
+        } else {
+            scontrino = scontrinoDao.findById(idScontrino).orElseThrow(() -> new RuntimeException("Scontrino non trovato"));
+        }
+        AtomicReference<Double> totale = new AtomicReference<>(scontrino.getTotale());
 
         codiciArticoli.forEach(c -> articoli.add(barcodeDao.findArticoloByCodice(c).orElseThrow()));
         articoli.forEach(a -> {
@@ -74,8 +90,11 @@ public class CassaAutomaticaService {
             totale.updateAndGet(v -> v + a.getPrezzoAttuale());
             //a.decrementaStock();
         });
-        scontrinoDao.save(new Scontrino(articoli, totale.get(), LocalDate.now()));
 
+        scontrino.setTotale(totale.get());
+        scontrino.setArticoli(articoli);
+
+        scontrinoDao.save(scontrino);
         return new ScontrinoDto(LocalDate.now(),articoloDtos,totale.get());
     }
 
